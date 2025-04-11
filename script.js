@@ -432,52 +432,64 @@ document.addEventListener('DOMContentLoaded', function() {
         
         checkbox.addEventListener('change', function() {
             if (this.checked) {
-                // عرض نافذة العد للفيديوهات/الكتب
-                const popup = document.getElementById('countPopup');
-                const title = document.getElementById('countPopupTitle');
-                title.textContent = taskName === 'فيديوهات' ? 
-                    'كم عدد الفيديوهات التي أضفتها؟' : 'كم عدد الكتب التي أضفتها؟';
-                
-                popup.style.display = 'flex';
-                document.getElementById('itemCount').value = 1;
-                
-                // تأكيد العد
-                document.getElementById('countConfirm').onclick = () => {
-                    const count = parseInt(document.getElementById('itemCount').value);
-                    if (count > 0) {
-                        taskElement.classList.add('completed');
-                        animateTaskCompletion(taskElement);
-                        localStorage.setItem(taskId, true);
-                        
-                        // حساب المكافأة (0.01 جنيه لكل فيديو/كتاب)
-                        const reward = count * 0.01;
-                        userData.points += count; // كل عنصر = 1 نقطة
-                        userData.moneyEarned = (userData.moneyEarned || 0) + reward;
-                        
-                        saveUserData();
-                        updateProgress();
-                        updateSubjectProgress();
-                        showEncouragement(`أحسنت! لقد ربحت ${reward.toFixed(2)} جنيه`);
-                        popup.style.display = 'none';
-                    }
-                };
-                
-                // إلغاء
-                document.getElementById('countCancel').onclick = () => {
-                    this.checked = false;
-                    popup.style.display = 'none';
-                };
+                taskElement.classList.add('completed');
+                animateTaskCompletion(taskElement);
+                addPoints(10, `إكمال مهمة ${taskName}`);
             } else {
                 taskElement.classList.remove('completed');
-                localStorage.setItem(taskId, false);
-                updateProgress();
-                updateSubjectProgress();
             }
+            localStorage.setItem(taskId, this.checked);
+            updateProgress();
+            updateSubjectProgress();
         });
         
         const label = document.createElement('label');
         label.htmlFor = taskId;
         label.textContent = taskName;
+        
+        // إضافة زر للفيديوهات
+        if (taskName === 'فيديوهات') {
+            const videoButton = document.createElement('button');
+            videoButton.className = 'video-button';
+            videoButton.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+            videoButton.title = 'فتح موقع الفيديوهات';
+        
+            videoButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const newTab = window.open('https://ahmedsalmanareda.github.io/Ytube-xlsx/', '_blank');
+        
+                // تحقق كل ثانية إذا أغلقت الصفحة
+                const checkCompletion = setInterval(() => {
+                    if (newTab.closed) {
+                        clearInterval(checkCompletion);
+                        // عرض البطاقة المنبثقة
+                        const popup = document.getElementById('videoCompletionPopup');
+                        popup.style.display = 'flex';
+        
+                        // تأكيد الإكمال
+                        document.getElementById('popupConfirm').addEventListener('click', () => {
+                            if (!checkbox.checked) {
+                                checkbox.checked = true;
+                                taskElement.classList.add('completed');
+                                animateTaskCompletion(taskElement);
+                                localStorage.setItem(taskId, true);
+                                updateProgress();
+                                updateSubjectProgress();
+                                addPoints(10, `إكمال مهمة ${taskName}`);
+                            }
+                            popup.style.display = 'none';
+                        });
+        
+                        // إلغاء
+                        document.getElementById('popupCancel').addEventListener('click', () => {
+                            popup.style.display = 'none';
+                        });
+                    }
+                }, 1000);
+            });
+        
+            taskElement.appendChild(videoButton);
+        }
         
         taskElement.appendChild(checkbox);
         taskElement.appendChild(label);
@@ -614,5 +626,4 @@ document.addEventListener('DOMContentLoaded', function() {
         delay: 0.5,
         ease: "power2.out"
     });
-    
 });
